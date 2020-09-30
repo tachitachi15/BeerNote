@@ -1,13 +1,17 @@
 package com.yuki.beernote
 
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.fragment.app.FragmentManager
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.android.synthetic.main.content_main.*
 import kotlinx.android.synthetic.main.fragment_first.*
 
 /**
@@ -40,19 +44,24 @@ class FirstFragment : Fragment() {
         listView.adapter = adapter
 
         view.findViewById<FloatingActionButton>(R.id.addButton).setOnClickListener {
-            val newBeer = Beer(0,"beer1",3.0f,2.3f,4.0f,2.1f,1.0f)
-            dao.insert(newBeer)
-
-            adapter.beers = dao.getAll()
+            val dialog = ParamSettingDialog(dao,adapter)
+            fragmentManager?.run{
+                dialog.show(this,"setting")
+            }
         }
-
     }
 
     val itemListener = object : BeerItemClickListener {
         override fun onBeerNameClick(beer:Beer) {
-            //beerの受け渡しに失敗　ここをBeer型で渡したい。
             val action = FirstFragmentDirections.actionFirstFragmentToSecondFragment(beer)
             findNavController().navigate(action)
+        }
+
+        override fun onEditClick(beer: Beer) {
+            val dialog = UpdateParamDialog(dao,adapter,beer)
+            fragmentManager?.run {
+                dialog.show(this, "update")
+            }
         }
         override fun onDeleteClick(beer:Beer) {
             dao.delete(beer)
@@ -60,7 +69,7 @@ class FirstFragment : Fragment() {
         }
     }
 
-    private class BeerAdapter(beers: List<Beer>,private val listener: BeerItemClickListener): BaseAdapter() {
+    class BeerAdapter(beers: List<Beer>,private val listener: BeerItemClickListener): BaseAdapter() {
 
         var beers:List<Beer> = beers
             set(beers) {
@@ -88,6 +97,10 @@ class FirstFragment : Fragment() {
                     listener.onDeleteClick(beer)
                 }
 
+            rowView.findViewById<ImageView>(R.id.beerEdit).setOnClickListener{
+                    listener.onEditClick(beer)
+            }
+
 
             return rowView
         }
@@ -95,6 +108,7 @@ class FirstFragment : Fragment() {
 
     interface BeerItemClickListener{
         fun onBeerNameClick(beer:Beer)
+        fun onEditClick(beer:Beer)
         fun onDeleteClick(beer:Beer)
     }
 }
